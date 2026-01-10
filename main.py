@@ -335,8 +335,8 @@ async def generate_ad(request: AdRequest):
                 logo = Image.open(BytesIO(logo_response.content)).convert("RGBA")
                 
                 # Resize logo to reasonable size (bigger for visibility)
-                logo_max_width = int(canvas_width * 0.30)
-                logo_max_height = int(canvas_height * 0.12)
+                logo_max_width = int(canvas_width * 0.50)
+                logo_max_height = int(canvas_height * 0.25)
                 
                 logo_ratio = logo.width / logo.height
                 if logo.width > logo_max_width:
