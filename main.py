@@ -61,6 +61,21 @@ def download_font(font_name="bold"):
                 return None
     return font_path
 
+def download_custom_font(font_url, font_id):
+    """Download custom font from URL (e.g., Airtable attachment)"""
+    font_path = f"/tmp/custom_{font_id}.ttf"
+    if not os.path.exists(font_path):
+        try:
+            headers = {'User-Agent': 'Mozilla/5.0'}
+            req = urllib.request.Request(font_url, headers=headers)
+            with urllib.request.urlopen(req, timeout=15) as response:
+                with open(font_path, 'wb') as f:
+                    f.write(response.read())
+        except Exception as e:
+            print(f"Custom font download failed: {e}")
+            return None
+    return font_path
+
 def download_font_regular():
     """Download regular weight font"""
     font_path = "/tmp/regular_font.ttf"
@@ -77,8 +92,23 @@ def download_font_regular():
             return None
     return font_path
 
-def get_font(size, bold=True):
+def get_font(size, bold=True, custom_font_url=None):
     """Get font at specified size with proper fallback"""
+    
+    # If custom font URL provided, download and use it
+    if custom_font_url:
+        custom_font_path = "/tmp/custom_font.ttf"
+        try:
+            headers = {'User-Agent': 'Mozilla/5.0'}
+            req = urllib.request.Request(custom_font_url, headers=headers)
+            with urllib.request.urlopen(req, timeout=15) as response:
+                with open(custom_font_path, 'wb') as f:
+                    f.write(response.read())
+            return ImageFont.truetype(custom_font_path, size)
+        except Exception as e:
+            print(f"Custom font download failed: {e}")
+            # Fall through to default fonts
+    
     font_path = download_font() if bold else download_font_regular()
     if font_path and os.path.exists(font_path):
         try:
@@ -156,6 +186,7 @@ class AdRequest(BaseModel):
     subheadline: Optional[str] = None
     cta_text: Optional[str] = "Shop Now"
     logo_url: Optional[str] = None
+    font_url: Optional[str] = None  # Custom font .ttf file URL
     format: Optional[str] = "instagram_feed"
     primary_color: Optional[str] = "#000000"
     secondary_color: Optional[str] = "#FFFFFF"
@@ -166,6 +197,8 @@ class AdRequest(BaseModel):
     text_color: Optional[str] = "#FFFFFF"
     add_overlay: Optional[bool] = True  # Add dark overlay for text readability
     overlay_opacity: Optional[float] = 0.3
+    headline_font_url: Optional[str] = None  # URL to custom headline font (.ttf)
+    body_font_url: Optional[str] = None  # URL to custom body font (.ttf)
 
 @app.get("/")
 def root():
@@ -250,10 +283,27 @@ async def generate_ad(request: AdRequest):
         subheadline_size = int(canvas_width * 0.055)  # 5.5% of width - should be ~60px
         cta_size = int(canvas_width * 0.04)  # CTA button text
         
-        # Load fonts - use bold for everything for consistency
-        headline_font = get_font(headline_size, bold=True)
-        subheadline_font = get_font(subheadline_size, bold=True)
-        cta_font = get_font(cta_size, bold=True)
+        # Load fonts - use custom if provided, otherwise default
+        if request.headline_font_url:
+            headline_font_path = download_custom_font(request.headline_font_url, "headline")
+            if headline_font_path:
+                headline_font = ImageFont.truetype(headline_font_path, headline_size)
+            else:
+                headline_font = get_font(headline_size, bold=True)
+        else:
+            headline_font = get_font(headline_size, bold=True)
+        
+        if request.body_font_url:
+            body_font_path = download_custom_font(request.body_font_url, "body")
+            if body_font_path:
+                subheadline_font = ImageFont.truetype(body_font_path, subheadline_size)
+                cta_font = ImageFont.truetype(body_font_path, cta_size)
+            else:
+                subheadline_font = get_font(subheadline_size, bold=True)
+                cta_font = get_font(cta_size, bold=True)
+        else:
+            subheadline_font = get_font(subheadline_size, bold=True)
+            cta_font = get_font(cta_size, bold=True)
         
         # Calculate text positioning based on headline_position
         if request.headline_position == "top":
