@@ -230,10 +230,19 @@ async def generate_ad(request: AdRequest):
         secondary_color = hex_to_rgb(request.secondary_color)
         accent_color = hex_to_rgb(request.accent_color)
         
-        # Calculate font sizes based on canvas - LARGER for readability
-        headline_size = int(canvas_width * 0.14)  # 14% of width (was 9%)
-        subheadline_size = int(canvas_width * 0.06)  # 6% of width (was 4.5%)
-        cta_size = int(canvas_width * 0.055)  # 5.5% of width (was 5%)
+        # Calculate font sizes based on canvas - DYNAMIC for headline
+        headline_length = len(request.headline)
+        if headline_length <= 15:
+            headline_size = int(canvas_width * 0.12)  # Short headlines - bigger
+        elif headline_length <= 25:
+            headline_size = int(canvas_width * 0.10)  # Medium headlines
+        elif headline_length <= 40:
+            headline_size = int(canvas_width * 0.08)  # Longer headlines
+        else:
+            headline_size = int(canvas_width * 0.065)  # Very long headlines
+        
+        subheadline_size = int(canvas_width * 0.05)  # 5% - readable subheadline
+        cta_size = int(canvas_width * 0.045)  # 4.5% for CTA button
         
         # Load fonts
         headline_font = get_font(headline_size, bold=True)
@@ -279,26 +288,26 @@ async def generate_ad(request: AdRequest):
         
         # Draw subheadline if provided
         if request.subheadline:
-            current_y += 20
+            current_y += 15
             subheadline_lines = wrap_text(request.subheadline, subheadline_font, max_text_width)
             for line in subheadline_lines:
                 text_width, text_height = get_text_size(draw, line, subheadline_font)
                 x = (canvas_width - text_width) // 2
-                draw_text_with_shadow(draw, (x, current_y), line, subheadline_font, text_color, shadow_offset=2)
-                current_y += text_height + 5
+                draw_text_with_shadow(draw, (x, current_y), line, subheadline_font, text_color, shadow_offset=3)
+                current_y += text_height + 8
         
         # Draw CTA button
         if request.cta_text:
             cta_text = request.cta_text.upper()
             cta_width, cta_height = get_text_size(draw, cta_text, cta_font)
             
-            button_padding_x = 60
-            button_padding_y = 25
+            button_padding_x = 50
+            button_padding_y = 20
             button_width = cta_width + button_padding_x * 2
             button_height = cta_height + button_padding_y * 2
             
             button_x = (canvas_width - button_width) // 2
-            button_y = current_y + 40
+            button_y = current_y + 30
             
             # Draw button background
             draw_rounded_rectangle(
@@ -308,9 +317,9 @@ async def generate_ad(request: AdRequest):
                 fill=accent_color + (255,)
             )
             
-            # Draw button text
-            text_x = button_x + button_padding_x
-            text_y = button_y + button_padding_y
+            # Draw button text - CENTERED properly
+            text_x = button_x + (button_width - cta_width) // 2
+            text_y = button_y + (button_height - cta_height) // 2
             draw.text((text_x, text_y), cta_text, font=cta_font, fill=primary_color)
         
         # Add logo if provided
