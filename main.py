@@ -40,12 +40,25 @@ def download_font(font_name="bold"):
     font_path = f"/tmp/{font_name}_font.ttf"
     if not os.path.exists(font_path):
         try:
-            # Use a reliable font - Montserrat Bold
-            url = "https://github.com/googlefonts/Montserrat/raw/main/fonts/ttf/Montserrat-Bold.ttf"
-            urllib.request.urlretrieve(url, font_path)
+            # Use raw githubusercontent for reliability
+            url = "https://raw.githubusercontent.com/googlefonts/Montserrat/main/fonts/ttf/Montserrat-Bold.ttf"
+            headers = {'User-Agent': 'Mozilla/5.0'}
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=10) as response:
+                with open(font_path, 'wb') as f:
+                    f.write(response.read())
         except Exception as e:
             print(f"Font download failed: {e}")
-            return None
+            # Try alternative CDN
+            try:
+                alt_url = "https://cdn.jsdelivr.net/fontsource/fonts/montserrat@latest/latin-700-normal.ttf"
+                req = urllib.request.Request(alt_url, headers={'User-Agent': 'Mozilla/5.0'})
+                with urllib.request.urlopen(req, timeout=10) as response:
+                    with open(font_path, 'wb') as f:
+                        f.write(response.read())
+            except Exception as e2:
+                print(f"Alt font download also failed: {e2}")
+                return None
     return font_path
 
 def download_font_regular():
@@ -53,21 +66,40 @@ def download_font_regular():
     font_path = "/tmp/regular_font.ttf"
     if not os.path.exists(font_path):
         try:
-            url = "https://github.com/googlefonts/Montserrat/raw/main/fonts/ttf/Montserrat-SemiBold.ttf"
-            urllib.request.urlretrieve(url, font_path)
+            url = "https://raw.githubusercontent.com/googlefonts/Montserrat/main/fonts/ttf/Montserrat-SemiBold.ttf"
+            headers = {'User-Agent': 'Mozilla/5.0'}
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=10) as response:
+                with open(font_path, 'wb') as f:
+                    f.write(response.read())
         except Exception as e:
             print(f"Font download failed: {e}")
             return None
     return font_path
 
 def get_font(size, bold=True):
-    """Get font at specified size"""
+    """Get font at specified size with proper fallback"""
     font_path = download_font() if bold else download_font_regular()
     if font_path and os.path.exists(font_path):
         try:
             return ImageFont.truetype(font_path, size)
         except Exception as e:
             print(f"Font load error: {e}")
+    
+    # Better fallback - try system fonts
+    fallback_fonts = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
+    ]
+    for fallback in fallback_fonts:
+        if os.path.exists(fallback):
+            try:
+                return ImageFont.truetype(fallback, size)
+            except:
+                continue
+    
+    # Last resort - default font (will be small but works)
     return ImageFont.load_default()
 
 def hex_to_rgb(hex_color):
