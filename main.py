@@ -198,10 +198,10 @@ async def generate_ad(request: AdRequest):
         secondary_color = hex_to_rgb(request.secondary_color)
         accent_color = hex_to_rgb(request.accent_color)
         
-        # Calculate font sizes based on canvas
-        headline_size = int(canvas_width * 0.09)  # 9% of width
-        subheadline_size = int(canvas_width * 0.045)  # 4.5% of width
-        cta_size = int(canvas_width * 0.05)  # 5% of width
+        # Calculate font sizes based on canvas - LARGER for readability
+        headline_size = int(canvas_width * 0.14)  # 14% of width (was 9%)
+        subheadline_size = int(canvas_width * 0.06)  # 6% of width (was 4.5%)
+        cta_size = int(canvas_width * 0.055)  # 5.5% of width (was 5%)
         
         # Load fonts
         headline_font = get_font(headline_size, bold=True)
@@ -242,8 +242,8 @@ async def generate_ad(request: AdRequest):
         for line in headline_lines:
             text_width, text_height = get_text_size(draw, line, headline_font)
             x = (canvas_width - text_width) // 2  # Center
-            draw_text_with_shadow(draw, (x, current_y), line, headline_font, text_color, shadow_offset=4)
-            current_y += text_height + 10
+            draw_text_with_shadow(draw, (x, current_y), line, headline_font, text_color, shadow_offset=6)
+            current_y += text_height + 15
         
         # Draw subheadline if provided
         if request.subheadline:
