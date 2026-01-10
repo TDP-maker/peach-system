@@ -112,11 +112,16 @@ def get_text_size(draw, text, font):
     bbox = draw.textbbox((0, 0), text, font=font)
     return bbox[2] - bbox[0], bbox[3] - bbox[1]
 
-def draw_text_with_shadow(draw, position, text, font, fill, shadow_color=(0, 0, 0), shadow_offset=3):
-    """Draw text with shadow for better readability"""
+def draw_text_with_shadow(draw, position, text, font, fill, shadow_color=None, shadow_offset=3, shadow_opacity=80):
+    """Draw text with soft shadow for better readability"""
     x, y = position
-    # Draw shadow
-    draw.text((x + shadow_offset, y + shadow_offset), text, font=font, fill=shadow_color + (150,))
+    
+    # If no shadow color specified, use a soft gray (not harsh black)
+    if shadow_color is None:
+        shadow_color = (60, 60, 60)  # Soft dark gray instead of black
+    
+    # Draw soft shadow with lower opacity
+    draw.text((x + shadow_offset, y + shadow_offset), text, font=font, fill=shadow_color + (shadow_opacity,))
     # Draw main text
     draw.text((x, y), text, font=font, fill=fill)
 
@@ -283,7 +288,7 @@ async def generate_ad(request: AdRequest):
         for line in headline_lines:
             text_width, text_height = get_text_size(draw, line, headline_font)
             x = (canvas_width - text_width) // 2  # Center
-            draw_text_with_shadow(draw, (x, current_y), line, headline_font, text_color, shadow_offset=6)
+            draw_text_with_shadow(draw, (x, current_y), line, headline_font, text_color, shadow_offset=3, shadow_opacity=60)
             current_y += text_height + 15
         
         # Draw subheadline if provided
@@ -293,7 +298,7 @@ async def generate_ad(request: AdRequest):
             for line in subheadline_lines:
                 text_width, text_height = get_text_size(draw, line, subheadline_font)
                 x = (canvas_width - text_width) // 2
-                draw_text_with_shadow(draw, (x, current_y), line, subheadline_font, text_color, shadow_offset=3)
+                draw_text_with_shadow(draw, (x, current_y), line, subheadline_font, text_color, shadow_offset=2, shadow_opacity=50)
                 current_y += text_height + 8
         
         # Draw CTA button
@@ -329,9 +334,9 @@ async def generate_ad(request: AdRequest):
                 logo_response.raise_for_status()
                 logo = Image.open(BytesIO(logo_response.content)).convert("RGBA")
                 
-                # Resize logo to reasonable size (15% of canvas width)
-                logo_max_width = int(canvas_width * 0.25)
-                logo_max_height = int(canvas_height * 0.08)
+                # Resize logo to reasonable size (bigger for visibility)
+                logo_max_width = int(canvas_width * 0.30)
+                logo_max_height = int(canvas_height * 0.12)
                 
                 logo_ratio = logo.width / logo.height
                 if logo.width > logo_max_width:
