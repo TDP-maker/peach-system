@@ -63,7 +63,11 @@ def download_font(font_name="bold"):
 
 def download_custom_font(font_url, font_id):
     """Download custom font from URL (e.g., Airtable attachment)"""
-    font_path = f"/tmp/custom_{font_id}.ttf"
+    # Use hash of URL to cache different fonts properly
+    import hashlib
+    url_hash = hashlib.md5(font_url.encode()).hexdigest()[:8]
+    font_path = f"/tmp/custom_{font_id}_{url_hash}.ttf"
+    
     if not os.path.exists(font_path):
         try:
             headers = {'User-Agent': 'Mozilla/5.0'}
