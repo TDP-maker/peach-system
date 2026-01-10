@@ -241,12 +241,12 @@ async def generate_ad(request: AdRequest):
         else:
             headline_size = int(canvas_width * 0.055)  # Very long headlines
         
-        subheadline_size = int(canvas_width * 0.055)  # Bigger subheadline - 5.5%
+        subheadline_size = int(canvas_width * 0.055)  # 5.5% of width - should be ~60px
         cta_size = int(canvas_width * 0.04)  # CTA button text
         
-        # Load fonts
+        # Load fonts - use bold for everything for consistency
         headline_font = get_font(headline_size, bold=True)
-        subheadline_font = get_font(subheadline_size, bold=False)
+        subheadline_font = get_font(subheadline_size, bold=True)
         cta_font = get_font(cta_size, bold=True)
         
         # Calculate text positioning based on headline_position
