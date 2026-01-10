@@ -233,16 +233,16 @@ async def generate_ad(request: AdRequest):
         # Calculate font sizes based on canvas - DYNAMIC for headline
         headline_length = len(request.headline)
         if headline_length <= 15:
-            headline_size = int(canvas_width * 0.12)  # Short headlines - bigger
+            headline_size = int(canvas_width * 0.09)  # Short headlines
         elif headline_length <= 25:
-            headline_size = int(canvas_width * 0.10)  # Medium headlines
+            headline_size = int(canvas_width * 0.075)  # Medium headlines
         elif headline_length <= 40:
-            headline_size = int(canvas_width * 0.08)  # Longer headlines
+            headline_size = int(canvas_width * 0.065)  # Longer headlines
         else:
-            headline_size = int(canvas_width * 0.065)  # Very long headlines
+            headline_size = int(canvas_width * 0.055)  # Very long headlines
         
-        subheadline_size = int(canvas_width * 0.05)  # 5% - readable subheadline
-        cta_size = int(canvas_width * 0.045)  # 4.5% for CTA button
+        subheadline_size = int(canvas_width * 0.055)  # Bigger subheadline - 5.5%
+        cta_size = int(canvas_width * 0.04)  # CTA button text
         
         # Load fonts
         headline_font = get_font(headline_size, bold=True)
@@ -302,7 +302,7 @@ async def generate_ad(request: AdRequest):
             cta_width, cta_height = get_text_size(draw, cta_text, cta_font)
             
             button_padding_x = 50
-            button_padding_y = 20
+            button_padding_y = 25
             button_width = cta_width + button_padding_x * 2
             button_height = cta_height + button_padding_y * 2
             
@@ -317,9 +317,9 @@ async def generate_ad(request: AdRequest):
                 fill=accent_color + (255,)
             )
             
-            # Draw button text - CENTERED properly
+            # Draw button text - CENTERED with baseline adjustment
             text_x = button_x + (button_width - cta_width) // 2
-            text_y = button_y + (button_height - cta_height) // 2
+            text_y = button_y + (button_height - cta_height) // 2 - int(cta_height * 0.15)
             draw.text((text_x, text_y), cta_text, font=cta_font, fill=primary_color)
         
         # Add logo if provided
