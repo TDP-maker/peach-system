@@ -162,6 +162,7 @@ class AdRequest(BaseModel):
     accent_color: Optional[str] = "#FFD700"
     headline_position: Optional[str] = "bottom"  # top, middle, bottom
     logo_position: Optional[str] = "top_left"  # top_left, top_right, bottom_left, bottom_right
+    logo_background: Optional[str] = None  # none, white, dark, blur
     text_color: Optional[str] = "#FFFFFF"
     add_overlay: Optional[bool] = True  # Add dark overlay for text readability
     overlay_opacity: Optional[float] = 0.3
@@ -334,9 +335,15 @@ async def generate_ad(request: AdRequest):
                 logo_response.raise_for_status()
                 logo = Image.open(BytesIO(logo_response.content)).convert("RGBA")
                 
-                # Resize logo to reasonable size (bigger for visibility)
-                logo_max_width = int(canvas_width * 0.50)
-                logo_max_height = int(canvas_height * 0.25)
+                # Resize logo - adjust size based on format
+                if request.format in ["instagram_feed", "facebook_feed"]:
+                    # Square formats - logo can be bigger, less safe zone needed
+                    logo_max_width = int(canvas_width * 0.35)
+                    logo_max_height = int(canvas_height * 0.15)
+                else:
+                    # Story/reel formats - keep logo smaller due to UI overlays
+                    logo_max_width = int(canvas_width * 0.30)
+                    logo_max_height = int(canvas_height * 0.10)
                 
                 logo_ratio = logo.width / logo.height
                 if logo.width > logo_max_width:
@@ -352,16 +359,50 @@ async def generate_ad(request: AdRequest):
                 
                 logo = logo.resize((new_width, new_height), Image.Resampling.LANCZOS)
                 
-                # Position logo
+                # Position logo - adjust for format
                 logo_padding = padding
+                if request.format in ["instagram_feed", "facebook_feed"]:
+                    # Square formats - position closer to edge
+                    top_offset = logo_padding
+                else:
+                    # Story formats - respect safe zone
+                    top_offset = safe_top_px + logo_padding
+                
                 if request.logo_position == "top_left":
-                    logo_x, logo_y = logo_padding, safe_top_px + logo_padding
+                    logo_x, logo_y = logo_padding, top_offset
                 elif request.logo_position == "top_right":
-                    logo_x, logo_y = canvas_width - new_width - logo_padding, safe_top_px + logo_padding
+                    logo_x, logo_y = canvas_width - new_width - logo_padding, top_offset
                 elif request.logo_position == "bottom_left":
                     logo_x, logo_y = logo_padding, safe_bottom_px - new_height - logo_padding
                 else:  # bottom_right
                     logo_x, logo_y = canvas_width - new_width - logo_padding, safe_bottom_px - new_height - logo_padding
+                
+                # Add logo background if requested (for visibility on busy backgrounds)
+                if hasattr(request, 'logo_background') and request.logo_background:
+                    bg_padding = 10
+                    if request.logo_background == "white":
+                        bg_color = (255, 255, 255, 200)
+                    elif request.logo_background == "dark":
+                        bg_color = (0, 0, 0, 150)
+                    elif request.logo_background == "blur":
+                        # Create soft glow effect
+                        bg_color = (255, 255, 255, 100)
+                        bg_padding = 20
+                    else:
+                        bg_color = None
+                    
+                    if bg_color:
+                        # Draw rounded rectangle behind logo
+                        bg_layer = Image.new("RGBA", (canvas_width, canvas_height), (0, 0, 0, 0))
+                        bg_draw = ImageDraw.Draw(bg_layer)
+                        draw_rounded_rectangle(
+                            bg_draw,
+                            [logo_x - bg_padding, logo_y - bg_padding, 
+                             logo_x + new_width + bg_padding, logo_y + new_height + bg_padding],
+                            radius=15,
+                            fill=bg_color
+                        )
+                        canvas = Image.alpha_composite(canvas, bg_layer)
                 
                 # Paste logo with transparency
                 canvas.paste(logo, (logo_x, logo_y), logo)
