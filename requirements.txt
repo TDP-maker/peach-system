@@ -4,3 +4,5 @@ pillow
 rembg[cpu]
 requests
 python-multipart
+arabic-reshaper
+python-bidi
